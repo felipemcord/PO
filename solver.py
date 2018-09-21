@@ -8,7 +8,7 @@ class LP:
     FPIVariables = 0
     E = []
     pivotLines = []
-    Objecvtive = []
+    Objective = []
     Restrictions = []
     FreeVariables = []
     A = []
@@ -21,17 +21,19 @@ class LPNP:
         self.FPIVariables = PL.FPIVariables
         self.A = np.array(PL.A)
         self.E = np.identity(self.A.shape[0])
-        self.Objecvtive = np.array(PL.Objective)
+        self.Objective = np.array(PL.Objective)
         self.Restrictions = np.array(PL.Restrictions)
         self.B = np.array(PL.B)
         self.pivotLines = []
+        self.pivotColumns = [0] * (self.RestrictionNumber + 1)
 
     VariableNumber = 0
     RestrictionNumber = 0
     FPIVariables = 0
     E = []
     pivotLines = []
-    Objecvtive = []
+    pivotColumns = []
+    Objective = []
     Restrictions = []
     FreeVariables = []
     A = []
@@ -43,7 +45,7 @@ def removeSmallNumbers(A):
 
 def Pivot(PL , i, j):
     E = np.identity(PL.A.shape[0])
-    print(i,j)
+    print("pivot",i,j)
 
     if(PL.A[i,j] != 1):
         E[i,...] /= PL.A[i,j]
@@ -64,6 +66,7 @@ def Canon( PL ):
             if(column[j] != 0 and j not in PL.pivotLines):
                 PL = Pivot(PL,j,i)
                 PL.pivotLines.append(j)
+                PL.pivotColumns[j] = i
                 break
     return PL
 
@@ -130,22 +133,21 @@ def CreateInputArray(file):
     PL.Objective.append(0)
     PL.A = [PL.Objective]
     PL.A.extend(PL.Restrictions)
-    for Line in PL.A:
-        print(Line)
-    # print(A)
     return PL
 
+    def createAuxPL(PL):
+        PLAux = LPNP(PL)
+        PLAux.Objective = np.delete(np.array([0] * PL.Objective.shape[1]),-1)
+        for i in range(1,PL.A.shape[0]):
+            if( PL.A[i,PL.pivotColumns[i]] * PL.A[i,-1] < 0):
+                print(PL)
 
-print(sys.argv)
+
+
 PL =  CreateInputArray(sys.argv[1])
 PLNP = LPNP(PL)
 np.set_printoptions(linewidth=200,precision=2,suppress=True)
-print(PLNP.A)
 Canon(PLNP)
 print(PLNP.A)
-print(PLNP.A[1,0] == 0)
-# I = np.identity(4)
-# A = np.arange(20).reshape(4, 5) ** 2
-# print(A)
-# print(A[1,range(1,A.shape[1] )])
-# Canon(A)
+for Line,Column in enumerate(PLNP.pivotColumns ):
+    print(Line,Column)
