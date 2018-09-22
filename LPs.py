@@ -13,8 +13,10 @@ class LP:
     FreeVariables = []
     A = []
     B = []
+    RestrictionType = []
 
 class LPNP:
+    
     def __init__(self,PL):
         self.VariableNumber = PL.VariableNumber
         self.RestrictionNumber = PL.RestrictionNumber
@@ -25,7 +27,9 @@ class LPNP:
         self.Restrictions = np.array(PL.Restrictions)
         self.B = np.array(PL.B)
         self.pivotLines = []
+        self.FreeVariables = PL.FreeVariables
         self.pivotColumns = [0] * (self.RestrictionNumber + 1)
+        self.RestrictionType = np.array(PL.RestrictionType)
 
     VariableNumber = 0
     RestrictionNumber = 0
@@ -39,3 +43,4 @@ class LPNP:
     A = []
     B = []
     Solution = []
+    RestrictionType = []
