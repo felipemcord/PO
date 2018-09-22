@@ -45,7 +45,7 @@ def removeSmallNumbers(A):
 
 def Pivot(PL , i, j):
     E = np.identity(PL.A.shape[0])
-    print("pivot",i,j)
+    # print("pivot",i,j)
 
     if(PL.A[i,j] != 1):
         E[i,...] /= PL.A[i,j]
@@ -135,12 +135,23 @@ def CreateInputArray(file):
     PL.A.extend(PL.Restrictions)
     return PL
 
+def insertValueinMatrix(PL,value,pos):
+    A = np.zeros((PL.A.shape[0],PL.A.shape[1] + 1))
+    for i in range(PL.A.shape[0]):
+        A[i] = np.insert(PL.A[i],pos,value)
+    PL.A = A
+
 def createAuxPL(PL):
     PLAux = LPNP(PL)
-    PLAux.Objective = np.delete(np.array([0] * PL.Objective.shape[1]),-1)
+    PLAux.Objective = np.array([0] * PL.Objective.shape[0])
+    PLAux.A[0] = PLAux.Objective
     for i in range(1,PL.A.shape[0]):
         if( PL.A[i,PL.pivotColumns[i]] * PL.A[i,-1] < 0):
-            print(PL)
+            PLAux.A[i] *= PL.A[i,-1]/abs(PL.A[i,-1])
+            insertValueinMatrix(PLAux,0,-1 )
+            PLAux.A[i,-2] = 1
+            PLAux.A[0,-2] = 1
+    return PLAux
 
 
 
@@ -148,6 +159,13 @@ PL =  CreateInputArray(sys.argv[1])
 PLNP = LPNP(PL)
 np.set_printoptions(linewidth=200,precision=2,suppress=True)
 Canon(PLNP)
+PLAux = createAuxPL(PLNP)
+print("\n")
 print(PLNP.A)
-for Line,Column in enumerate(PLNP.pivotColumns ):
-    print(Line,Column)
+print("\n")
+print(PLAux.A)
+print("\n")
+Canon(PLAux)
+print(PLAux.A)  
+# for Line,Column in enumerate(PLNP.pivotColumns ):
+#     print(Line,Column)
