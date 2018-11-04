@@ -1,0 +1,3 @@
+Python versão 3.7.0
+
+Uso solver.py [ENTRADA] [SAIDA]
