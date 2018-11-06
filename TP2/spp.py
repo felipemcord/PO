@@ -1,6 +1,7 @@
 import numpy as np
 import cplex
 import sys
+import os
 from cplex.callbacks import MIPInfoCallback
 
 class TimeLimitCallback(MIPInfoCallback):
@@ -28,7 +29,8 @@ class CILP:
         self.colnames = ["x" + str(i) for i in range(1,columns + 1)]
         self.rownames = ["r" + str(i) for i in range(1,rows + 1)]
         self.prob = cplex.Cplex()
-        self.prob.objective.set_sense(self.prob.objective.sense.maximize)
+        self.prob.parameters.preprocessing.presolve.set(0)
+        self.prob.objective.set_sense(self.prob.objective.sense.minimize)
 
         self.prob.linear_constraints.add(rhs=self.rhs, senses=self.sense,
                                 names=self.rownames)
@@ -76,10 +78,11 @@ class CILP:
         timelim_cb.aborted = False
         self.timeLimit = timelim_cb
     
-    def GetInfo(self):
+    def GetInfo(self,writefile):
         gap = 100 *self.prob.solution.MIP.get_mip_relative_gap()
         bestObj = self.prob.solution.MIP.get_best_objective()
         Time = self.prob.get_time() - self.starttime
+        writefile.write("{:.2f};{:.2f};{:.2f}\n".format(bestObj,gap,Time) )
         print(gap,bestObj,Time)
 
     starttime = 0
@@ -97,28 +100,32 @@ class CILP:
     c = []
     prob = None
 
-name = "sppus01"
-if(len(sys.argv) == 2):
-    name = sys.argv[1]
-
-ILP_FILE = open(name,"r")
-aux = ILP_FILE.readline().split()
-rows = int(aux[0])
-columns = int(aux[1])
-OILP = CILP(columns,rows)
-
-OILP.readColumns(ILP_FILE)
-OILP.setConst()
-OILP.WriteCplex()
-# OILP.setTimeLimit(20)
-
-OILP.Solve()
-
-OILP.PrintSol()
-
-OILP.GetInfo()
-
-# OILP.PrintSol()
+def SolveFile(name,writefile):
+    ILP_FILE = open(name,"r")
+    aux = ILP_FILE.readline().split()
+    rows = int(aux[0])
+    columns = int(aux[1])
+    OILP = CILP(columns,rows)
 
 
+    OILP.readColumns(ILP_FILE)
+    OILP.setConst()
+    OILP.WriteCplex()
+
+
+    OILP.setTimeLimit(20)
+
+    OILP.Solve()
+
+    OILP.PrintSol()
+
+    OILP.GetInfo(writefile)
+
+writefile = open("results.csv","w")
+files = os.listdir("OR")
+for i in files:
+    try:
+        SolveFile(i,writefile)
+    except:
+        pass
 
