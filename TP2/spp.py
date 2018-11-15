@@ -23,13 +23,21 @@ class CILP:
         self.columns = columns
         self.ub = np.ones(columns).tolist()
         self.lb = np.zeros(columns).tolist()
-        self.rhs = np.ones(rows)
+        self.rhs = np.ones(rows).tolist()
         self.ctype = "I" * columns
         self.sense = "E" * rows
+        self.obj = []
+        self.c = []
         self.colnames = ["x" + str(i) for i in range(1,columns + 1)]
         self.rownames = ["r" + str(i) for i in range(1,rows + 1)]
         self.prob = cplex.Cplex()
         self.prob.parameters.preprocessing.presolve.set(0)
+        self.prob.parameters.preprocessing.aggregator.set(0)
+        self.prob.parameters.preprocessing.repeatpresolve.set(0)
+        self.prob.parameters.preprocessing.coeffreduce.set(0)
+        self.prob.parameters.mip.strategy.search.set(0)
+        self.prob.parameters.mip.limits.cutpasses.set(-1)
+
         self.prob.objective.set_sense(self.prob.objective.sense.minimize)
 
         self.prob.linear_constraints.add(rhs=self.rhs, senses=self.sense,
@@ -52,7 +60,7 @@ class CILP:
             self.readColumn(ILP_FILE)
     
     def setConst(self):
-        print(len(self.obj), len(self.lb)  )
+        print(len(self.obj), len(self.lb), self.columns  )
         self.prob.variables.add(obj=self.obj, lb=self.lb, ub=self.ub,
                        names=self.colnames, types=self.ctype, columns=self.c)
     
@@ -82,8 +90,8 @@ class CILP:
         gap = 100 *self.prob.solution.MIP.get_mip_relative_gap()
         bestObj = self.prob.solution.MIP.get_best_objective()
         Time = self.prob.get_time() - self.starttime
-        writefile.write("{:.2f};{:.2f};{:.2f}\n".format(bestObj,gap,Time) )
-        print(gap,bestObj,Time)
+        writefile.write("{}; {}; {:.2f}; {:.2f}; {:.2f}\n".format(self.rows,self.columns,bestObj,gap,Time) )
+        print("{};{};{:.2f};{:.2f};{:.2f}\n".format(self.rows,self.columns,bestObj,gap,Time))
 
     starttime = 0
     timeLimit = None
@@ -113,19 +121,42 @@ def SolveFile(name,writefile):
     OILP.WriteCplex()
 
 
-    OILP.setTimeLimit(20)
+    OILP.setTimeLimit(60*60)
 
     OILP.Solve()
 
     OILP.PrintSol()
 
     OILP.GetInfo(writefile)
+    ILP_FILE.close()
 
-writefile = open("results.csv","w")
-files = os.listdir("OR")
-for i in files:
-    try:
-        SolveFile(i,writefile)
-    except:
-        pass
+if __name__ == "__main__":
+    writefile = open("results.csv","w")
+    files = os.listdir("OR")
+    # files = ["sppaa01.txt","sppaa01.txt"]
+    for name in files:
+        ILP_FILE = open("OR/" + name,"r")
+        aux = ILP_FILE.readline().split()
+        rows = int(aux[0])
+        columns = int(aux[1])
+        OILP = CILP(columns,rows)
 
+
+        OILP.readColumns(ILP_FILE)
+        OILP.setConst()
+        OILP.WriteCplex()
+
+
+        OILP.setTimeLimit(20)
+
+        OILP.Solve()
+
+        OILP.PrintSol()
+
+        OILP.GetInfo(writefile)
+        ILP_FILE.close()
+        ILP_FILE  = None
+        OILP = None
+    writefile.close()
+
+        
